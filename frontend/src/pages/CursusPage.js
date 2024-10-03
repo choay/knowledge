@@ -13,36 +13,22 @@ function CursusPage() {
   const [message, setMessage] = useState('');
   const [loadingItem, setLoadingItem] = useState(false);
   const [isPurchased, setIsPurchased] = useState(false);
-
+  
   useEffect(() => {
     const fetchCursus = async () => {
       const abortController = new AbortController();
       try {
-        const token = Cookies.get('authToken');
-        if (!token) {
-          setError("Vous devez être connecté pour accéder à cette page.");
-          return;
-        }
-
         const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/cursus/${cursusId}`, {
           signal: abortController.signal,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         });
 
         setCursus(response.data);
 
+        // Ici, on peut vérifier si l'utilisateur est connecté, mais on ne bloque pas l'accès
+        const token = Cookies.get('authToken');
         const userId = Cookies.get('userId');
-        if (!userId) {
-          setError("ID utilisateur non trouvé.");
-          return;
-        }
-
-        console.log('Fetching purchases for URL:', `${process.env.REACT_APP_API_URL}/api/achats/user/${userId}`);
-        
-        // Fetch purchases
-        try {
+        if (token && userId) {
+          // Si connecté, récupérer les achats
           const purchaseResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/achats/user/${userId}`, {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -52,15 +38,6 @@ function CursusPage() {
           const purchasedCursus = purchaseResponse.data.map(item => item.cursusId);
           if (purchasedCursus.includes(cursusId)) {
             setIsPurchased(true);
-          }
-        } catch (err) {
-          // Handle 404 specifically
-          if (err.response?.status === 404) {
-            console.warn('No purchases found for this user.');
-            setIsPurchased(false); // Set default to not purchased
-          } else {
-            console.error('Error fetching purchases:', err);
-            setError(err.response?.data?.message || 'Erreur lors de la récupération des achats.');
           }
         }
       } catch (err) {
