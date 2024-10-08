@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function Signup() {
-  // États pour gérer les données du formulaire et les messages d'erreur/success
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,35 +24,41 @@ function Signup() {
       return;
     }
 
+    // Vérification de la complexité du mot de passe
+    const passwordValidation = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordValidation.test(password)) {
+      setError(
+        "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial"
+      );
+      return;
+    }
+
     try {
       // Envoyez les données au serveur
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/register`, { // Changement d'URL
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
       });
-      
 
-      // Vérifiez la réponse du serveur
       const responseData = await response.json();
 
       if (!response.ok) {
-        setError(responseData.message || 'Erreur lors de l\'inscription');
+        setError(responseData.message || "Erreur lors de l'inscription");
         return;
       }
 
       // Affiche un message de succès et redirige vers la page de connexion
-      setSuccess('Mail d\'activation envoyé. Veuillez vérifier votre boîte mail.');
+      setSuccess("Mail d'activation envoyé. Veuillez vérifier votre boîte mail.");
       setTimeout(() => {
         navigate('/login');
       }, 3000);
 
     } catch (error) {
-      // Affiche une erreur si la requête échoue
-      setError('Erreur lors de l\'inscription');
-      console.error('Erreur lors de l\'inscription:', error);
+      setError("Erreur lors de l'inscription");
+      console.error("Erreur lors de l'inscription:", error);
     }
   };
 

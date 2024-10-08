@@ -6,19 +6,21 @@ import Cookies from 'js-cookie';
 
 function LessonPage() {
     const { lessonId } = useParams();
-    const { user } = useAuth(); // Récupération de l'utilisateur depuis le contexte
+    const { user } = useAuth(); // Récupération de l'utilisateur depuis le contexte d'authentification
     const navigate = useNavigate();
 
     const [lesson, setLesson] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [completed, setCompleted] = useState(false);
+    const [completed, setCompleted] = useState(false); // État pour savoir si la leçon est déjà complétée
     const [isLoadingComplete, setIsLoadingComplete] = useState(false); // Gestion du chargement du bouton
 
-    // Récupération des données de la leçon
+    // Récupération des données de la leçon et de la progression utilisateur
     useEffect(() => {
-        const fetchLesson = async () => {
+        const fetchLessonAndProgress = async () => {
             const token = Cookies.get('authToken');
+
+            // Vérification du token d'authentification
             if (!token) {
                 setError('Le token d\'authentification est manquant.');
                 setLoading(false);
@@ -27,48 +29,36 @@ function LessonPage() {
             }
 
             try {
-                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/lessons/${lessonId}`, {
+                // Appel pour récupérer la leçon
+                const lessonResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/lessons/${lessonId}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                setLesson(response.data);
-                setCompleted(response.data.completed); // Définit l'état de complétion
-            } catch (error) {
-                setError(error.response?.data?.message || 'Erreur lors de la récupération des données de la leçon.');
-            } finally {
-                setLoading(false);
-            }
-        };
+                setLesson(lessonResponse.data); // Mise à jour de l'état avec les données de la leçon
 
-        fetchLesson();
-    }, [lessonId, navigate]);
+                // Si l'utilisateur est connecté, vérification de la progression
+                if (user && user.id) {
+                    const progressResponse = await axios.get(
+                        `${process.env.REACT_APP_API_URL}/api/progress/find/${user.id}/${lessonId}`,
+                        {
+                            headers: { Authorization: `Bearer ${token}` },
+                        }
+                    );
 
-    // Récupération de la progression de l'utilisateur
-    useEffect(() => {
-        const fetchProgress = async () => {
-            if (!user || !user.id) return;
-
-            const token = Cookies.get('authToken');
-            if (!token) {
-                setError('Le token est manquant.');
-                return;
-            }
-
-            try {
-                const progressResponse = await axios.get(
-                    `${process.env.REACT_APP_API_URL}/api/progress/find/${user.id}/${lessonId}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
+                    // Mise à jour de l'état si la leçon est complétée
+                    if (progressResponse.data?.progress?.completed) {
+                        setCompleted(true);
                     }
-                );
-                setCompleted(progressResponse.data.progress.completed);
+                }
             } catch (error) {
-                setError('Erreur lors de la récupération de la progression.');
+                setError(error.response?.data?.message || 'Erreur lors de la récupération des données.');
+            } finally {
+                setLoading(false); // Fin du chargement
             }
         };
 
-        fetchProgress();
-    }, [lessonId, user]);
+        fetchLessonAndProgress(); // Appel de la fonction de récupération
+    }, [lessonId, user, navigate]);
 
     // Gestion de la complétion de la leçon
     const handleCompleteLesson = async () => {
@@ -133,7 +123,9 @@ function LessonPage() {
                     {/* Bouton de complétion */}
                     <button
                         onClick={handleCompleteLesson}
-                        className={`mt-4 px-4 py-2 rounded ${completed || isLoadingComplete ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'} text-white transition duration-200`}
+                        className={`mt-4 px-4 py-2 rounded transition duration-200 
+                            ${completed ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600'} 
+                            ${isLoadingComplete ? 'opacity-50 cursor-not-allowed' : 'opacity-100'}`}
                         disabled={completed || isLoadingComplete}
                     >
                         {isLoadingComplete ? 'En cours de complétion...' : completed ? 'Leçon Complétée' : 'Marquer comme Complétée'}

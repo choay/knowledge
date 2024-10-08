@@ -3,114 +3,130 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import Cookies from 'js-cookie';
+import {jwtDecode} from 'jwt-decode'; // Correctly import jwtDecode
 
 function CursusPage() {
-  const { cursusId } = useParams();
-  const { cart, addToCart } = useCart();
-  const [cursus, setCursus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [message, setMessage] = useState('');
-  const [loadingItem, setLoadingItem] = useState(false);
-  const [isPurchased, setIsPurchased] = useState(false);
-  
-  useEffect(() => {
-    const fetchCursus = async () => {
-      const abortController = new AbortController();
-      try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/cursus/${cursusId}`, {
-          signal: abortController.signal,
-        });
+    const { cursusId } = useParams();
+    const { cart, addToCart } = useCart();
+    const [cursus, setCursus] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [message, setMessage] = useState('');
+    const [purchasedLessons, setPurchasedLessons] = useState([]);
+    const [completedLessons, setCompletedLessons] = useState([]); // Track completed lessons
 
-        setCursus(response.data);
+    // Fetch the cursus details
+    useEffect(() => {
+        const fetchCursus = async () => {
+            const abortController = new AbortController();
+            try {
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/cursus/${cursusId}`, {
+                    signal: abortController.signal,
+                });
+                setCursus(response.data);
+                setLoading(false);
+            } catch (err) {
+                if (err.name !== 'CanceledError') {
+                    setError('Erreur lors du chargement du cursus');
+                    setLoading(false);
+                }
+            }
+            return () => abortController.abort();
+        };
 
-        // Ici, on peut vérifier si l'utilisateur est connecté, mais on ne bloque pas l'accès
+        fetchCursus();
+    }, [cursusId]);
+
+    // Fetch user's purchased lessons and completed lessons
+    useEffect(() => {
         const token = Cookies.get('authToken');
-        const userId = Cookies.get('userId');
-        if (token && userId) {
-          // Si connecté, récupérer les achats
-          const purchaseResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/achats/user/${userId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+        
+        if (token) {
+            const fetchUserLessons = async () => {
+                try {
+                    const decodedToken = jwtDecode(token);
+                    const userId = decodedToken?.id || decodedToken?.userId;
 
-          const purchasedCursus = purchaseResponse.data.map(item => item.cursusId);
-          if (purchasedCursus.includes(cursusId)) {
-            setIsPurchased(true);
-          }
-        }
-      } catch (err) {
-        if (!axios.isCancel(err)) {
-          console.error('Error fetching cursus:', err);
-          setError(err.response?.data?.message || 'Erreur lors de la récupération des données.');
-        }
-      } finally {
-        setLoading(false);
-      }
+                    if (!userId) {
+                        console.error('User ID introuvable dans le token.');
+                        return;
+                    }
 
-      return () => {
-        abortController.abort();
-      };
+                    // Fetch the purchased lessons
+                    const purchasesResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/achats/user/${userId}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    setPurchasedLessons(purchasesResponse.data);
+
+                    // Fetch the completed lessons
+                    const completedResponse = await axios.get(`${process.env.REACT_APP_API_URL}/api/progress/user/${userId}/cursus/${cursusId}`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    setCompletedLessons(completedResponse.data); // Assuming it's an array of completed lesson IDs
+                } catch (error) {
+                    console.error('Erreur lors de la récupération des leçons:', error);
+                }
+            };
+
+            fetchUserLessons();
+        } else {
+            console.error("Aucun token d'authentification trouvé.");
+        }
+    }, [cursusId]);
+
+    // Handle adding a lesson to the cart
+    const handleAddToCart = (lesson) => {
+        if (!cart.some(item => item.id === lesson.id)) {
+            addToCart(lesson);
+            setMessage('Leçon ajoutée au panier!');
+        } else {
+            setMessage('Cette leçon est déjà dans votre panier.');
+        }
     };
 
-    fetchCursus();
-  }, [cursusId]);
+    if (loading) return <div>Chargement...</div>;
+    if (error) return <div>{error}</div>;
 
-  const handleAddToCart = (lesson) => {
-    setLoadingItem(true);
+    return (
+        <div className="p-24">
+            <h1 className="text-2xl font-bold mb-4">{cursus?.title}</h1>
+            <p>{cursus?.description}</p>
 
-    const alreadyInCart = cart.some((cartItem) => cartItem.id === lesson.id);
-    if (alreadyInCart) {
-      setMessage(`${lesson.title} est déjà dans le panier !`);
-    } else {
-      addToCart(lesson);
-      setMessage(`${lesson.title} ajouté au panier !`);
-    }
+            <h2 className="text-xl font-bold mt-4">Leçons</h2>
+            {cursus?.lessons?.map((lesson) => {
+                // Check if the lesson is purchased or completed by the user
+                const isLessonPurchased = purchasedLessons.some(purchased => purchased.lessonId === lesson.id);
+                const isLessonCompleted = completedLessons.some(completed => completed.lessonId === lesson.id);
 
-    setLoadingItem(false);
-  };
-
-  if (loading) {
-    return <div className="text-center">Chargement...</div>;
-  }
-
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
-  }
-
-  return (
-    <div className="container mx-auto pt-24">
-      <h1 className="text-3xl font-bold mb-4">{cursus.title}</h1>
-      <p className="mb-4">{cursus.description}</p>
-      {message && <p className="text-green-500">{message}</p>}
-      <h2 className="text-2xl mt-4">Leçons disponibles</h2>
-      <ul>
-        {cursus.lessons.map((lesson) => (
-          <li key={lesson.id} className="mb-2">
-            <div className="flex justify-between items-center">
-              <Link to={`/lessons/${lesson.id}`} className="text-blue-500 hover:underline">
-                {lesson.title}
-              </Link>
-              {!isPurchased ? (
-                <button
-                  onClick={() => handleAddToCart(lesson)}
-                  className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-200 ${
-                    loadingItem ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                  disabled={loadingItem}
-                >
-                  {loadingItem ? 'Chargement...' : 'Ajouter au panier'}
-                </button>
-              ) : (
-                <span className="text-green-500">Déjà acheté</span>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+                return (
+                    <div key={lesson.id} className="border p-4 mb-4 rounded">
+                        <h3 className="text-lg font-semibold">{lesson.title}</h3>
+                        <p>{lesson.description}</p>
+                        
+                        {isLessonCompleted ? (
+                            <button disabled className="mt-2 bg-green-500 text-white px-4 py-2 rounded">
+                                Leçon complétée
+                            </button>
+                        ) : isLessonPurchased ? (
+                            // If the lesson is purchased, show a link to the lesson
+                            <Link to={`/lessons/${lesson.id}`} className="text-blue-500">
+                                Voir leçon
+                            </Link>
+                        ) : (
+                            // If not purchased, show the "Add to cart" button
+                            <button
+                                onClick={() => handleAddToCart(lesson)}
+                                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded"
+                            >
+                                Ajouter au panier
+                            </button>
+                        )}
+                    </div>
+                );
+            })}
+            {message && <p className="text-green-500">{message}</p>}
+        </div>
+    );
 }
 
 export default CursusPage;
