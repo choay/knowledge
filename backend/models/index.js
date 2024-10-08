@@ -8,42 +8,47 @@ const Achat = require('./achat')(sequelize);
 const Certificate = require('./certificate')(sequelize);
 const Progress = require('./progress')(sequelize);
 
+// Define associations
 const defineAssociations = () => {
-  // User - Achat Relationship
-  User.hasMany(Achat, { foreignKey: 'userId', onDelete: 'CASCADE' });
-  Achat.belongsTo(User, { foreignKey: 'userId' });
+  try {
+    // User - Achat Relationship
+    User.hasMany(Achat, { foreignKey: 'userId', onDelete: 'CASCADE' });
+    Achat.belongsTo(User, { foreignKey: 'userId' });
 
-  // User - Certificate Relationship
-  User.hasMany(Certificate, { foreignKey: 'userId', onDelete: 'CASCADE' });
-  Certificate.belongsTo(User, { foreignKey: 'userId' });
+    // User - Certificate Relationship
+    User.hasMany(Certificate, { foreignKey: 'userId', onDelete: 'CASCADE' });
+    Certificate.belongsTo(User, { foreignKey: 'userId' });
 
-  // Cursus - Lesson Relationship
-  Cursus.hasMany(Lesson, { foreignKey: 'cursusId', as: 'lessons' });
-  Lesson.belongsTo(Cursus, { foreignKey: 'cursusId' });
+    // Cursus - Lesson Relationship
+    Cursus.hasMany(Lesson, { foreignKey: 'cursusId', as: 'lessons' });
+    Lesson.belongsTo(Cursus, { foreignKey: 'cursusId' });
 
-  // Cursus - Achat Relationship
-  Cursus.hasMany(Achat, { foreignKey: 'cursusId', onDelete: 'CASCADE' });
-  Achat.belongsTo(Cursus, { foreignKey: 'cursusId' });
+    // Cursus - Achat Relationship
+    Cursus.hasMany(Achat, { foreignKey: 'cursusId', onDelete: 'CASCADE' });
+    Achat.belongsTo(Cursus, { foreignKey: 'cursusId' });
 
-  // Lesson - Achat Relationship
-  Lesson.hasMany(Achat, { foreignKey: 'lessonId', onDelete: 'CASCADE' });
-  Achat.belongsTo(Lesson, { foreignKey: 'lessonId' });
+    // Lesson - Achat Relationship
+    Lesson.hasMany(Achat, { foreignKey: 'lessonId', onDelete: 'CASCADE' });
+    Achat.belongsTo(Lesson, { foreignKey: 'lessonId' });
 
-  // Cursus - Certificate Relationship
-  Cursus.hasMany(Certificate, { foreignKey: 'cursusId', onDelete: 'CASCADE' });
-  Certificate.belongsTo(Cursus, { foreignKey: 'cursusId' });
+    // Cursus - Certificate Relationship
+    Cursus.hasMany(Certificate, { foreignKey: 'cursusId', onDelete: 'CASCADE' });
+    Certificate.belongsTo(Cursus, { foreignKey: 'cursusId' });
 
-  // User - Progress Relationship
-  User.hasMany(Progress, { foreignKey: 'userId', onDelete: 'CASCADE' });
-  Progress.belongsTo(User, { foreignKey: 'userId' });
+    // User - Progress Relationship
+    User.hasMany(Progress, { foreignKey: 'userId', onDelete: 'CASCADE' });
+    Progress.belongsTo(User, { foreignKey: 'userId' });
 
-  // Lesson - Progress Relationship
-  Lesson.hasMany(Progress, { foreignKey: 'lessonId', onDelete: 'CASCADE' });
-  Progress.belongsTo(Lesson, { foreignKey: 'lessonId' });
+    // Lesson - Progress Relationship
+    Lesson.hasMany(Progress, { foreignKey: 'lessonId', onDelete: 'CASCADE' });
+    Progress.belongsTo(Lesson, { foreignKey: 'lessonId' });
 
-  // Theme - Cursus Relationship
-  Theme.hasMany(Cursus, { foreignKey: 'themeId', onDelete: 'CASCADE' });
-  Cursus.belongsTo(Theme, { foreignKey: 'themeId' });
+    // Theme - Cursus Relationship
+    Theme.hasMany(Cursus, { foreignKey: 'themeId', onDelete: 'CASCADE' });
+    Cursus.belongsTo(Theme, { foreignKey: 'themeId' });
+  } catch (error) {
+    console.error('Error defining associations:', error);
+  }
 };
 
 // Call the function to define associations
@@ -58,7 +63,7 @@ const syncModels = async () => {
   }
 };
 
-// Appel de la fonction de synchronisation
+// Call the function to sync models
 syncModels();
 
 module.exports = {
@@ -71,4 +76,3 @@ module.exports = {
   Progress,
   syncModels,
 };
-

@@ -1,8 +1,12 @@
-// models/cursus.js
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const Cursus = sequelize.define('Cursus', {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -15,9 +19,11 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Themes', // Make sure this matches the name of the table in the database
+        model: 'Themes', // Ensure this matches the actual Themes table
         key: 'id',
       },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
     },
   });
 

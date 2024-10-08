@@ -1,7 +1,8 @@
+// models/achat.js
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  const Achat = sequelize.define('Achat', {
+  return sequelize.define('Achat', {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
@@ -13,8 +14,9 @@ module.exports = (sequelize) => {
     },
     userId: {
       type: DataTypes.INTEGER,
+      allowNull: false,
       references: {
-        model: 'Users', // Ensure this matches your actual Users table name
+        model: 'Users', // Ensure this matches the actual table name
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -22,8 +24,9 @@ module.exports = (sequelize) => {
     },
     cursusId: {
       type: DataTypes.INTEGER,
+      allowNull: false,
       references: {
-        model: 'Cursus', // Ensure this matches your actual Cursus table name
+        model: 'Cursus', // Ensure this matches the actual table name
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -31,15 +34,17 @@ module.exports = (sequelize) => {
     },
     lessonId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       references: {
-        model: 'Lessons', // Ensure this matches your actual Lessons table name
+        model: 'Lessons', // Ensure this matches the actual table name
         key: 'id',
       },
-      onDelete: 'SET NULL',
+      onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
     },
+    lessonIds: {
+      type: DataTypes.JSON, // Store lesson IDs as JSON
+      allowNull: true,
+    },
   });
-
-  return Achat;
 };

@@ -10,6 +10,6 @@ router.post('/confirm-payment', authenticateJWT, achatController.confirmPayment)
 router.get('/:id', authenticateJWT, achatController.getAchatById);
 router.get('/', achatController.getAllAchats);
 router.get('/user/:userId/lesson/:lessonId', achatController.getAchatByLessonAndUser);
-router.get('/user/:userId', achatController.getAchatsByUserId);  // Vérifiez que cette ligne est correcte
+router.get('/user/:userId', achatController.getAchatsByUserId);  
 
 module.exports = router;

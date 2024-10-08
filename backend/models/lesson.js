@@ -2,6 +2,11 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const Lesson = sequelize.define('Lesson', {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -19,9 +24,11 @@ module.exports = (sequelize) => {
     cursusId: {
       type: DataTypes.INTEGER,
       references: {
-        model: 'Cursus',
+        model: 'Cursus', // Ensure this matches the actual Cursus table
         key: 'id',
       },
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE',
     },
   });
 
